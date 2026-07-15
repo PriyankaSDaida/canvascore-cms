@@ -20,20 +20,50 @@ CanvasCore is a production-minded enterprise content management showcase inspire
 
 ## Architecture
 
+The application is organized as a layered content platform prototype: a rich editorial experience in the browser, a mock content API boundary, and a lightweight data/workflow layer that can be expanded into production services.
+
 ```mermaid
 flowchart LR
-  Editor[Editor workspace] --> State[Typed content state]
-  State --> Blocks[Schema-driven blocks]
-  State --> Workflow[Workflow state machine]
-  State --> Preview[Live preview renderer]
-  Roles[Role and permissions] --> Workflow
-  Roles --> Editor
-  API[Content API boundary] --> State
-  Workflow --> Audit[Version and audit trail]
-  Blocks --> Channels[Web · Mobile · Campaigns]
+  subgraph Client[Client experience]
+    UI[Editorial workspace UI]
+    State[Typed content state]
+    Preview[Live preview renderer]
+  end
+
+  subgraph App[Application layer]
+    Routes[Next.js app routes]
+    API[Content API route]
+    Worker[Cloudflare Worker entry]
+  end
+
+  subgraph Data[Data and workflow]
+    Schema[Schema definitions]
+    DB[(Database / content models)]
+    Workflow[Workflow state machine]
+    Audit[Version & audit trail]
+  end
+
+  UI --> State
+  State --> Preview
+  State --> Workflow
+  UI --> Routes
+  Routes --> API
+  API --> Schema
+  API --> DB
+  Workflow --> Audit
+  Schema --> DB
+  Worker --> API
 ```
 
-The prototype keeps state local so the showcase runs without credentials. The boundaries map directly to production services: content API, schema registry, workflow engine, policy service, preview delivery, and audit event store.
+### How the pieces fit together
+
+- The editorial UI runs in the browser and manages content state, block composition, and workflow actions locally for a fast demo experience.
+- The app routes and API route provide a clean boundary for content reads and writes, mirroring how a headless CMS would expose data to clients.
+- The schema layer defines the shape of content models, while the database layer stores the structured records and relationships needed for a real content platform.
+- Workflow and audit state are separated so draft, review, approval, and publish transitions can be modeled explicitly and extended with permissions or automation.
+- The preview renderer is fed from the same content state so authors can see changes immediately without needing a separate publishing pipeline.
+
+The prototype keeps state local so the showcase runs without credentials, but the boundaries map directly to production services such as content APIs, schema registries, workflow engines, policy services, preview delivery, and audit event stores.
 
 ## Stack
 
